@@ -1,5 +1,7 @@
 import os
 import ast
+import re
+
 from llm_client import HelloAgentsLLM
 from dotenv import load_dotenv
 from typing import List, Dict
@@ -43,6 +45,37 @@ class Planner:
         
         try:
             plan_str = response_text.split("```python")[1].split("```")[0].strip()
+
+            # jlq_fix ==========================================================
+            # 2. 【关键步骤】自动修复缺失的引号
+            # 逻辑：查找 [ 或 , 后面，没有以 " 或 ' 开头，但以汉字/字母开头的片段，强制加上双引号
+            # 正则解释：
+            # ([,\[])      -> 捕获组1：逗号 或 左方括号
+            # \s*          -> 可选的空白字符
+            # (?!["\'])    -> 负向先行断言：确保后面不是引号
+            # ([\u4e00-\u9fa5a-zA-Z][^,\]]*?) -> 捕获组2：以汉字或字母开头，直到遇到逗号或右括号前的内容
+            # \s*([,\]])   -> 捕获组3：可选空白 + 逗号 或 右方括号
+
+            pattern = r'([,\[])\s*(?!["\'])([\u4e00-\u9fa5a-zA-Z][^,\]]*?)\s*([,\]])'
+
+            # 循环替换，直到没有匹配项为止（防止嵌套或连续多个错误）
+            while re.search(pattern, plan_str):
+                plan_str = re.sub(pattern, r'\1 "\2" \3', plan_str)
+                print(f"🔧 检测到缺失引号，已修复。当前字符串: {plan_str}")
+
+            # 3. 【步骤 B】关键新增：清洗重复的引号和非法格式
+            # 3.1 将连续的两个或多个双引号 "" 替换为一个 "
+            # 例如： "...""]  -> "...""]
+            plan_str = re.sub(r'"{2,}', '"', plan_str)
+
+            # 3.2 清理引号和括号之间可能产生的多余空格 (可选，但能增加稳定性)
+            # 例如： " " ]  -> " "]
+            plan_str = re.sub(r'"\s+"', '"', plan_str)
+            plan_str = re.sub(r' $  \s* $  ', ']', plan_str)  # 防止出现 ]]
+
+            print(f"✨ 清洗重复符号后: {plan_str}")
+            # jlq_fix end=======================================================
+
             plan = ast.literal_eval(plan_str)
             return plan if isinstance(plan, list) else []
         except (ValueError, SyntaxError, IndexError) as e:
