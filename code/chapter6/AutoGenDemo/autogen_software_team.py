@@ -22,8 +22,34 @@ def create_openai_model_client():
     return OpenAIChatCompletionClient(
         model=os.getenv("LLM_MODEL_ID", "gpt-4o"),
         api_key=os.getenv("LLM_API_KEY"),
-        base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+        base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
+
+        # jlq_add model_info
+        model_info={
+            "vision": False,
+            "function_calling": False,
+            "json_output": False,
+            "family": "unknown",
+            "structured_output": True,
+        },
+
+        # 教程示例
+        # model = "deepseek-chat",
+        # api_key = os.getenv("DEEPSEEK_API_KEY"),
+        # base_url = "https://api.deepseek.com/v1",
+        # model_info = {
+        #     "function_calling": True,
+        #     "max_tokens": 4096,
+        #     "context_length": 32768,
+        #     "vision": False,
+        #     "json_output": True,
+        #     "family": "deepseek",
+        #     "structured_output": True,
+        # }
     )
+
+
+
 
 def create_product_manager(model_client):
     """创建产品经理智能体"""
