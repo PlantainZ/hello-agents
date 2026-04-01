@@ -7,7 +7,7 @@ from .llm import HelloAgentsLLM
 from .config import Config
 
 class Agent(ABC):
-    """Agent基类"""
+    """Agent基类，不关心实现形式，只关心行为和属性。"""
     
     def __init__(
         self,

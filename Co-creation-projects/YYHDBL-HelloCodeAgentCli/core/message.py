@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any, Literal
 from datetime import datetime
 from pydantic import BaseModel
 
-MessageRole = Literal["user", "assistant", "system", "tool"]
+MessageRole = Literal["user", "assistant", "system", "tool"] # literal 的意思是限定这个值的类型必须是其中指定的类。
 
 class Message(BaseModel):
     """消息类"""

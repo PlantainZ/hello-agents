@@ -20,7 +20,7 @@ class MySimpleAgent(SimpleAgent):
     ):
         super().__init__(name, llm, system_prompt, config)
         self.tool_registry = tool_registry
-        self.enable_tool_calling = enable_tool_calling and tool_registry is not None
+        self.enable_tool_calling = enable_tool_calling and tool_registry is not None # 保证工具不为空才能开启
         print(f"✅ {name} 初始化完成，工具调用: {'启用' if self.enable_tool_calling else '禁用'}")
     
     def run(self, input_text: str, max_tool_iterations: int = 3, **kwargs) -> str:
@@ -45,11 +45,20 @@ class MySimpleAgent(SimpleAgent):
 
         # 如果没有启用工具调用，使用简单对话逻辑
         if not self.enable_tool_calling:
-            response = self.llm.invoke(messages, **kwargs)
+            response = self.llm.invoke(messages, **kwargs) # 这里会返回一个LLMResponse对象，但Message的要求是str,此函数返回也要求str，所以后续转类型
+
+            # jlq_try: 提取内容 (通常属性名为 content 或 text，根据报错提示尝试 .content)
+            response_text = response.content
+
             self.add_message(Message(input_text, "user"))
-            self.add_message(Message(response, "assistant"))
+            # self.add_message(Message(response, "assistant"))
+
+            self.add_message(Message(response_text, "assistant")) # jlq_try
+
             print(f"✅ {self.name} 响应完成")
-            return response
+            # return response
+
+            return response_text # jlq_try
 
         # 支持多轮工具调用的逻辑
         return self._run_with_tools(messages, input_text, max_tool_iterations, **kwargs)
@@ -87,14 +96,17 @@ class MySimpleAgent(SimpleAgent):
             # 调用LLM
             response = self.llm.invoke(messages, **kwargs)
 
+            # jlq_try: 同样的问题，传回来的对象是LLMResponse，不是str，所以转型。函数下方所有response_text, 原来都是response.
+            response_text = response.content
+
             # 检查是否有工具调用
-            tool_calls = self._parse_tool_calls(response)
+            tool_calls = self._parse_tool_calls(response_text)
 
             if tool_calls:
                 print(f"🔧 检测到 {len(tool_calls)} 个工具调用")
                 # 执行所有工具调用并收集结果
                 tool_results = []
-                clean_response = response
+                clean_response = response_text
 
                 for call in tool_calls:
                     result = self._execute_tool_call(call['tool_name'], call['parameters'])
@@ -113,7 +125,7 @@ class MySimpleAgent(SimpleAgent):
                 continue
 
             # 没有工具调用，这是最终回答
-            final_response = response
+            final_response = response_text
             break
 
         # 如果超过最大迭代次数，获取最后一次回答

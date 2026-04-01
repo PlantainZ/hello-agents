@@ -9,7 +9,7 @@ class MyLLM(HelloAgentsLLM):
         self,
         model: Optional[str] = None,
         api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        base_url: Optional[str] = None, # 这当中的Optional，只是为了让str的值可以为0. py默认str值不能为0！！！
         provider: Optional[str] = "auto",
         **kwargs
     ):
